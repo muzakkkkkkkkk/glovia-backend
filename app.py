@@ -81,6 +81,19 @@ def register():
 
     return jsonify({"message": "Account created successfully!"}), 201
 
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    user = User.query.filter_by(username=data.get('username')).first()
+    
+    if user and bcrypt.checkpw(data.get('password').encode('utf-8'), user.password_hash.encode('utf-8')):
+        return jsonify({
+            "message": "Login success!",
+            "user": {"username": user.username, "bio": user.bio}
+        }), 200
+        
+    return jsonify({"error": "Invalid username or password"}), 401
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
