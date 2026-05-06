@@ -106,6 +106,26 @@ def login():
         
     return jsonify({"error": "Invalid username or password"}), 401
 
+@app.route('/feed', methods=['GET'])
+def get_feed():
+    # 1. Fetch all posts from the database, newest first
+    posts = Post.query.order_by(Post.created_at.desc()).all()
+    
+    # 2. Format the data into a list that the frontend can read
+    output = []
+    for post in posts:
+        output.append({
+            "id": post.id,
+            "username": post.author.username,
+            "profile_pic": post.author.profile_pic,
+            "image_url": post.image_url,
+            "caption": post.caption,
+            "created_at": post.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        })
+    
+    # 3. Send the list back to Glovia's home screen
+    return jsonify(output)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
