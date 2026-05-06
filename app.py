@@ -29,6 +29,13 @@ db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins=["https://glovia-frontend.onrender.com", "http://localhost:3000"], async_mode='eventlet')
 cipher = Fernet(Fernet.generate_key())
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    bio = db.Column(db.String(255), default="Welcome to Glovia! ✨")
+    profile_pic = db.Column(db.String(255), default="https://placehold.co/100x100?text=Glovia")
+
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     room = db.Column(db.String(50))
@@ -50,6 +57,29 @@ def handle_msg(data):
     db.session.commit()
 
     emit('message', data, room=data['room'])
+
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({"error": "Username and password required"}), 400
+
+    # Check if username exists
+    if User.query.filter_by(username=username).first():
+        return jsonify({"error": "Username already taken! ✨"}), 409
+
+    # Scramble the password for security
+    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+    # Save to database
+    new_user = User(username=username, password_hash=hashed)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"message": "Account created successfully!"}), 201
 
 if __name__ == '__main__':
     with app.app_context():
