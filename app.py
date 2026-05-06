@@ -19,7 +19,6 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# PASTE YOUR NEON STRING BELOW
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://neondb_owner:npg_oNW4Jab8ABlD@ep-dry-moon-ao3p1ubh-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'glovia_pink_key_2026'
