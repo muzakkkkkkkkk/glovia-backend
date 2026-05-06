@@ -126,6 +126,24 @@ def get_feed():
     # 3. Send the list back to Glovia's home screen
     return jsonify(output)
 
+@app.route('/create_post', methods=['POST'])
+def create_post():
+    data = request.get_json()
+    username = data.get('username')
+    image_url = data.get('image_url')
+    caption = data.get('caption')
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Create the new post and link it to the user's ID
+    new_post = Post(user_id=user.id, image_url=image_url, caption=caption)
+    db.session.add(new_post)
+    db.session.commit()
+
+    return jsonify({"message": "Post shared to feed! ✨"}), 201
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
