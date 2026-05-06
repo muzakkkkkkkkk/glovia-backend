@@ -29,13 +29,14 @@ def on_join(data):
 
 @socketio.on('send_msg')
 def handle_msg(data):
-    # Encrypt for privacy
-    encrypted = cipher.encrypt(data['content'].encode())
-    new_msg = Message(room=data['room'], sender=data['user'], content=encrypted)
+    # This part saves to your Neon database
+    content = data['content']
+    new_msg = Message(room=data['room'], sender=data['sender'], content=content.encode())
     db.session.add(new_msg)
     db.session.commit()
-    # Send back to everyone in the room
-    emit('receive_msg', data, room=data['room'])
+
+    # ADD THIS LINE - This is what sends the message to the chat window!
+    emit('message', content, room=data['room'])
 
 if __name__ == '__main__':
     with app.app_context():
