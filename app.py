@@ -14,7 +14,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'glovia_pink_key_2026'
 
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins=["https://glovia-frontend.onrender.com", "http://localhost:3000"], async_mode='eventlet')
 cipher = Fernet(Fernet.generate_key())
 
 class Message(db.Model):
