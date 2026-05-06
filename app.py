@@ -11,6 +11,17 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     bio = db.Column(db.String(255), default="Welcome to Glovia! ✨")
     profile_pic = db.Column(db.String(255), default="https://placehold.co/100x100?text=Glovia")
+
+class Post(db.Model):
+    __tablename__ = 'post'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    image_url = db.Column(db.Text, nullable=False)
+    caption = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    # This links the post to the user so we can see who posted it
+    author = db.relationship('User', backref=db.backref('posts', lazy=True))
     
 import os
 from flask import Flask, request, jsonify
