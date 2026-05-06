@@ -1,0 +1,44 @@
+import os
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit, join_room
+from cryptography.fernet import Fernet
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+
+# PASTE YOUR NEON STRING BELOW
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://neondb_owner:npg_oNW4Jab8ABlD@ep-dry-moon-ao3p1ubh-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'glovia_pink_key_2026'
+
+db = SQLAlchemy(app)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+cipher = Fernet(Fernet.generate_key())
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    room = db.Column(db.String(50))
+    sender = db.Column(db.String(50))
+    content = db.Column(db.LargeBinary)
+
+@socketio.on('join')
+def on_join(data):
+    join_room(data['room'])
+
+@socketio.on('send_msg')
+def handle_msg(data):
+    # Encrypt for privacy
+    encrypted = cipher.encrypt(data['content'].encode())
+    new_msg = Message(room=data['room'], sender=data['user'], content=encrypted)
+    db.session.add(new_msg)
+    db.session.commit()
+    # Send back to everyone in the room
+    emit('receive_msg', data, room=data['room'])
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port)
