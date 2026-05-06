@@ -1,3 +1,5 @@
+import bcrypt
+from flask import request, jsonify
 # Add this to your imports
 import bcrypt
 
