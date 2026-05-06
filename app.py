@@ -1,3 +1,14 @@
+# Add this to your imports
+import bcrypt
+
+# Add this class below your Message class
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    bio = db.Column(db.String(255), default="Welcome to Glovia! ✨")
+    profile_pic = db.Column(db.String(255), default="https://placehold.co/100x100?text=Glovia")
+    
 import os
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
