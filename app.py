@@ -5,6 +5,7 @@ import bcrypt
 
 # Add this class below your Message class
 class User(db.Model):
+    __tablename__ = 'user' # This tells SQLAlchemy to look for the table we just made
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
