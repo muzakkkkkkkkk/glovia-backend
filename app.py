@@ -71,14 +71,18 @@ def like_post(post_id):
         return jsonify({"likes": post.likes}), 200
     return jsonify({"error": "Post not found"}), 404
 
-@app.route('/send_message', methods=['POST']) # Personal messaging
-def send_msg():
+@app.route('/send_message', methods=['POST'])
+def send_message():
     data = request.get_json()
-    new_msg = Message(sender=data['sender'], receiver=data['receiver'], text=data['text'])
+    new_msg = Message(
+        sender=data['sender'], 
+        text=data['text'], 
+        group_id=data.get('group_id', 0) # Defaults to 0 for Global Chat
+    )
     db.session.add(new_msg)
     db.session.commit()
-    return jsonify({"message": "Sent! 💌"}), 201
-
+    return jsonify({"status": "sent"}), 201
+    
 @app.route('/feed', methods=['GET'])
 def get_feed():
     posts = Post.query.order_by(Post.id.desc()).all()
