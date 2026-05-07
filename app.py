@@ -98,6 +98,26 @@ def create_post():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# --- LIKE A POST ---
+@app.route('/like_post/<int:post_id>', methods=['POST'])
+def like_post(post_id):
+    # Logic to increment likes in the database
+    return jsonify({"message": "Liked! ❤️"}), 200
+
+# --- SEARCH USERS ---
+@app.route('/search_user', methods=['GET'])
+def search_user():
+    query = request.args.get('username')
+    users = User.query.filter(User.username.ilike(f'%{query}%')).all()
+    return jsonify([{"username": u.username} for u in users])
+
+# --- ADD COMMENT ---
+@app.route('/comment', methods=['POST'])
+def add_comment():
+    data = request.get_json()
+    # Logic to save data['text'] linked to data['post_id']
+    return jsonify({"message": "Commented! 💬"}), 201
+
 if __name__ == '__main__':
     # Use the port Render assigns
     port = int(os.environ.get("PORT", 10000))
