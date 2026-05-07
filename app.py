@@ -131,6 +131,23 @@ def follow_user():
     db.session.commit()
     return jsonify({"message": "Following"}), 200
 
+@app.route('/messages/<int:group_id>', methods=['GET'])
+def get_messages(group_id):
+    # Fetch messages for a specific group (0 = All Girls Chat)
+    msgs = Message.query.filter_by(group_id=group_id).order_by(Message.id.asc()).all()
+    return jsonify([{"sender": m.sender, "text": m.text} for m in msgs])
+
+@app.route('/search_user', methods=['GET'])
+def search_user():
+    target = request.args.get('username')
+    viewer = request.args.get('viewer')
+    user = User.query.filter_by(username=target).first()
+    if user:
+        # Check if viewer follows target (placeholder logic)
+        is_following = Follow.query.filter_by(follower=viewer, followed=target).first() is not None
+        return jsonify({"username": user.username, "is_following": is_following}), 200
+    return jsonify({"error": "Not found"}), 404
+
 # Place all new routes ABOVE this line
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
