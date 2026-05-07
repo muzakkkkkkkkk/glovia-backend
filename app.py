@@ -1,157 +1,86 @@
+import os
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS # <--- 1. ADD THIS IMPORT
+from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-CORS(app) # <--- 2. ADD THIS LINE RIGHT HERE
+CORS(app)  # This allows your frontend to talk to the backend!
 
-import bcrypt
-from flask import request, jsonify
-# Add this to your imports
-import bcrypt
+# Database Configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
-# Add this class below your Message class
+# --- DATABASE MODELS ---
 class User(db.Model):
-    __tablename__ = 'user' # Must be lowercase 'user' to match Neon
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
-    bio = db.Column(db.String(255), default="Welcome to Glovia! ✨")
-    profile_pic = db.Column(db.String(255), default="https://placehold.co/100x100?text=Glovia")
+    password_hash = db.Column(db.String(255), nullable=False)
 
 class Post(db.Model):
-    __tablename__ = 'post' # Must be lowercase 'post' to match Neon
+    __tablename__ = 'post'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     image_url = db.Column(db.Text, nullable=False)
     caption = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    
-    author = db.relationship('User', backref=db.backref('posts', lazy=True))
-    
-import os
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO, emit, join_room
-from cryptography.fernet import Fernet
-from flask_cors import CORS
+    username = db.Column(db.String(50)) # For easier feed loading
 
-app = Flask(__name__)
-CORS(app)
+# --- ROUTES ---
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://neondb_owner:npg_oNW4Jab8ABlD@ep-dry-moon-ao3p1ubh-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'glovia_pink_key_2026'
-
-db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins=["https://glovia-frontend.onrender.com", "http://localhost:3000"], async_mode='eventlet')
-cipher = Fernet(Fernet.generate_key())
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
-    bio = db.Column(db.String(255), default="Welcome to Glovia! ✨")
-    profile_pic = db.Column(db.String(255), default="https://placehold.co/100x100?text=Glovia")
-
-class Message(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    room = db.Column(db.String(50))
-    sender = db.Column(db.String(50))
-    content = db.Column(db.LargeBinary)
-
-@socketio.on('join')
-def on_join(data):
-    join_room(data['room'])
-
-@socketio.on('send_msg')
-def handle_msg(data):
-    # This must match 'sender' from frontend
-    content = data['content']
-    sender = data.get('sender', 'Anonymous')
-    
-    new_msg = Message(room=data['room'], sender=sender, content=content.encode())
-    db.session.add(new_msg)
-    db.session.commit()
-
-    emit('message', data, room=data['room'])
+@app.route('/')
+def home():
+    return "Glovia Backend is Awake! 💕"
 
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    if not username or not password:
-        return jsonify({"error": "Username and password required"}), 400
-
-    # Check if username exists
-    if User.query.filter_by(username=username).first():
-        return jsonify({"error": "Username already taken! ✨"}), 409
-
-    # Scramble the password for security
-    hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-    # Save to database
-    new_user = User(username=username, password_hash=hashed)
-    db.session.add(new_user)
-    db.session.commit()
-
-    return jsonify({"message": "Account created successfully!"}), 201
+    hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
+    new_user = User(username=data['username'], password_hash=hashed_pw)
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({"message": "User created! ✨"}), 201
+    except:
+        return jsonify({"error": "User already exists"}), 400
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    user = User.query.filter_by(username=data.get('username')).first()
-    
-    if user and bcrypt.checkpw(data.get('password').encode('utf-8'), user.password_hash.encode('utf-8')):
-        return jsonify({
-            "message": "Login success!",
-            "user": {"username": user.username, "bio": user.bio}
-        }), 200
-        
-    return jsonify({"error": "Invalid username or password"}), 401
+    user = User.query.filter_by(username=data['username']).first()
+    if user and check_password_hash(user.password_hash, data['password']):
+        return jsonify({"message": "Welcome back! 💕", "username": user.username}), 200
+    return jsonify({"error": "Invalid credentials"}), 401
 
 @app.route('/feed', methods=['GET'])
 def get_feed():
-    # 1. Fetch all posts from the database, newest first
-    posts = Post.query.order_by(Post.created_at.desc()).all()
-    
-    # 2. Format the data into a list that the frontend can read
+    posts = Post.query.order_by(Post.id.desc()).all()
     output = []
     for post in posts:
         output.append({
-            "id": post.id,
-            "username": post.author.username,
-            "profile_pic": post.author.profile_pic,
             "image_url": post.image_url,
             "caption": post.caption,
-            "created_at": post.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            "username": post.username or "Glovia Girl"
         })
-    
-    # 3. Send the list back to Glovia's home screen
     return jsonify(output)
 
 @app.route('/create_post', methods=['POST'])
 def create_post():
     data = request.get_json()
-    username = data.get('username')
-    image_url = data.get('image_url')
-    caption = data.get('caption')
-
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=data['username']).first()
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    # Create the new post and link it to the user's ID
-    new_post = Post(user_id=user.id, image_url=image_url, caption=caption)
+    new_post = Post(
+        user_id=user.id,
+        image_url=data['image_url'],
+        caption=data['caption'],
+        username=user.username
+    )
     db.session.add(new_post)
     db.session.commit()
-
-    return jsonify({"message": "Post shared to feed! ✨"}), 201
+    return jsonify({"message": "Post shared! 🌸"}), 201
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    port = int(os.environ.get('PORT', 5000))
-    socketio.run(app, host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=10000)
