@@ -11,3 +11,9 @@ Flask-SQLAlchemy
 psycopg2-binary
 flask-cors
 werkzeug
+Flask
+Flask-SQLAlchemy
+flask-cors
+psycopg2-binary
+werkzeug
+gunicorn
