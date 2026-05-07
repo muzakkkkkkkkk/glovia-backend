@@ -93,14 +93,9 @@ def get_feed():
 
 @app.route('/messages/<int:group_id>', methods=['GET'])
 def get_messages(group_id):
-    # Fetch messages for specific group or Global (0)
+    # Fetch messages for a specific group (0 = All Girls Chat)
     msgs = Message.query.filter_by(group_id=group_id).order_by(Message.id.asc()).all()
-    return jsonify([{
-        "id": m.id,
-        "sender": m.sender,
-        "text": m.text,
-        "seen_by": m.seen_by.split(',') if m.seen_by else []
-    } for m in msgs])
+    return jsonify([{"sender": m.sender, "text": m.text} for m in msgs])
 
 @app.route('/mark_seen', methods=['POST'])
 def mark_seen():
@@ -115,29 +110,6 @@ def mark_seen():
 
 # --- NEW ROUTES ---
 @app.route('/search_user', methods=['GET'])
-def search():
-    query = request.args.get('username')
-    user = User.query.filter_by(username=query).first()
-    if user:
-        is_following = Follow.query.filter_by(follower=request.args.get('viewer'), followed=query).first() is not None
-        return jsonify({"username": user.username, "is_following": is_following}), 200
-    return jsonify({"error": "User not found"}), 404
-
-@app.route('/follow', methods=['POST'])
-def follow_user():
-    data = request.get_json()
-    new_follow = Follow(follower=data['follower'], followed=data['followed'])
-    db.session.add(new_follow)
-    db.session.commit()
-    return jsonify({"message": "Following"}), 200
-
-@app.route('/messages/<int:group_id>', methods=['GET'])
-def get_messages(group_id):
-    # Fetch messages for a specific group (0 = All Girls Chat)
-    msgs = Message.query.filter_by(group_id=group_id).order_by(Message.id.asc()).all()
-    return jsonify([{"sender": m.sender, "text": m.text} for m in msgs])
-
-@app.route('/search_user', methods=['GET'])
 def search_user():
     target = request.args.get('username')
     viewer = request.args.get('viewer')
@@ -147,6 +119,16 @@ def search_user():
         is_following = Follow.query.filter_by(follower=viewer, followed=target).first() is not None
         return jsonify({"username": user.username, "is_following": is_following}), 200
     return jsonify({"error": "Not found"}), 404
+
+@app.route('/follow', methods=['POST'])
+def follow_user():
+    data = request.get_json()
+    new_follow = Follow(follower=data['follower'], followed=data['followed'])
+    db.session.add(new_follow)
+    db.session.commit()
+    return jsonify({"message": "Following"}), 200
+
+
 
 # Place all new routes ABOVE this line
 if __name__ == '__main__':
