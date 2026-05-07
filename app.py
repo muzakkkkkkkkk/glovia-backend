@@ -5,7 +5,7 @@ import bcrypt
 
 # Add this class below your Message class
 class User(db.Model):
-    __tablename__ = 'user' # This tells SQLAlchemy to look for the table we just made
+    __tablename__ = 'user' # Must be lowercase 'user' to match Neon
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
@@ -13,14 +13,13 @@ class User(db.Model):
     profile_pic = db.Column(db.String(255), default="https://placehold.co/100x100?text=Glovia")
 
 class Post(db.Model):
-    __tablename__ = 'post'
+    __tablename__ = 'post' # Must be lowercase 'post' to match Neon
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     image_url = db.Column(db.Text, nullable=False)
     caption = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-
-    # This links the post to the user so we can see who posted it
+    
     author = db.relationship('User', backref=db.backref('posts', lazy=True))
     
 import os
