@@ -108,8 +108,8 @@ def mark_seen():
 
 @app.route('/messages/<int:group_id>', methods=['GET'])
 def get_messages(group_id):
-    # group_id 0 = All Girls Chat (Global)
-    msgs = Message.query.filter_by(group_id=group_id).order_by(Message.id.asc()).all()
+    # Fetching messages for the specific group from the database
+    msgs = Message.query.filter_by(group_id=group_id).all()
     return jsonify([{"sender": m.sender, "text": m.text} for m in msgs])
 
 @app.route('/search_user', methods=['GET'])
