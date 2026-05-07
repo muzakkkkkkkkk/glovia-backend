@@ -71,6 +71,18 @@ def send_msg():
     db.session.commit()
     return jsonify({"message": "Sent! 💌"}), 201
 
+@app.route('/feed', methods=['GET'])
+def get_feed():
+    posts = Post.query.order_by(Post.id.desc()).all()
+    return jsonify([{
+        "id": p.id, 
+        "image_url": p.image_url, 
+        "caption": p.caption, 
+        "username": p.username, 
+        "likes": p.likes,                 # Added Likes
+        "comment_count": p.comment_count   # Added Comments
+    } for p in posts])
+
 # Place all new routes ABOVE this line
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
