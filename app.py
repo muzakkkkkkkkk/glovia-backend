@@ -91,12 +91,6 @@ def get_feed():
         "comment_count": p.comment_count   # Added Comments
     } for p in posts])
 
-@app.route('/messages/<int:group_id>', methods=['GET'])
-def get_messages(group_id):
-    # Fetch messages for a specific group (0 = All Girls Chat)
-    msgs = Message.query.filter_by(group_id=group_id).order_by(Message.id.asc()).all()
-    return jsonify([{"sender": m.sender, "text": m.text} for m in msgs])
-
 @app.route('/mark_seen', methods=['POST'])
 def mark_seen():
     data = request.get_json()
@@ -108,27 +102,29 @@ def mark_seen():
         db.session.commit()
     return jsonify({"status": "seen"}), 200
 
-# --- NEW ROUTES ---
+@app.route('/messages/<int:group_id>', methods=['GET'])
+def get_messages(group_id):
+    # group_id 0 = All Girls Chat (Global)
+    msgs = Message.query.filter_by(group_id=group_id).order_by(Message.id.asc()).all()
+    return jsonify([{"sender": m.sender, "text": m.text} for m in msgs])
+
 @app.route('/search_user', methods=['GET'])
 def search_user():
     target = request.args.get('username')
     viewer = request.args.get('viewer')
     user = User.query.filter_by(username=target).first()
     if user:
-        # Check if viewer follows target (placeholder logic)
         is_following = Follow.query.filter_by(follower=viewer, followed=target).first() is not None
         return jsonify({"username": user.username, "is_following": is_following}), 200
     return jsonify({"error": "Not found"}), 404
 
 @app.route('/follow', methods=['POST'])
-def follow_user():
+def follow():
     data = request.get_json()
     new_follow = Follow(follower=data['follower'], followed=data['followed'])
     db.session.add(new_follow)
     db.session.commit()
-    return jsonify({"message": "Following"}), 200
-
-
+    return jsonify({"message": "Success"}), 200
 
 # Place all new routes ABOVE this line
 if __name__ == '__main__':
