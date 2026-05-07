@@ -31,12 +31,20 @@ class Post(db.Model):
     username = db.Column(db.String(50))
     likes = db.Column(db.Integer, default=0)
 
-class Message(db.Model): # For one-on-one messaging
-    __tablename__ = 'message'
+# --- DATABASE MODELS ---
+class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender = db.Column(db.String(50))
-    receiver = db.Column(db.String(50))
     text = db.Column(db.Text)
+    group_id = db.Column(db.Integer, default=0) # 0 = Global "All Girls Chat"
+    recipient = db.Column(db.String(50), nullable=True) # For 1-on-1
+    is_personal = db.Column(db.Boolean, default=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Follow(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    follower = db.Column(db.String(50))
+    followed = db.Column(db.String(50))
 
 # --- ROUTES ---
 
@@ -104,6 +112,24 @@ def mark_seen():
         msg.seen_by = ",".join(current_seen)
         db.session.commit()
     return jsonify({"status": "seen"}), 200
+
+# --- NEW ROUTES ---
+@app.route('/search_user', methods=['GET'])
+def search():
+    query = request.args.get('username')
+    user = User.query.filter_by(username=query).first()
+    if user:
+        is_following = Follow.query.filter_by(follower=request.args.get('viewer'), followed=query).first() is not None
+        return jsonify({"username": user.username, "is_following": is_following}), 200
+    return jsonify({"error": "User not found"}), 404
+
+@app.route('/follow', methods=['POST'])
+def follow_user():
+    data = request.get_json()
+    new_follow = Follow(follower=data['follower'], followed=data['followed'])
+    db.session.add(new_follow)
+    db.session.commit()
+    return jsonify({"message": "Following"}), 200
 
 # Place all new routes ABOVE this line
 if __name__ == '__main__':
