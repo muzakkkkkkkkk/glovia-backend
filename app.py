@@ -83,6 +83,28 @@ def get_feed():
         "comment_count": p.comment_count   # Added Comments
     } for p in posts])
 
+@app.route('/messages/<int:group_id>', methods=['GET'])
+def get_messages(group_id):
+    # Fetch messages for specific group or Global (0)
+    msgs = Message.query.filter_by(group_id=group_id).order_by(Message.id.asc()).all()
+    return jsonify([{
+        "id": m.id,
+        "sender": m.sender,
+        "text": m.text,
+        "seen_by": m.seen_by.split(',') if m.seen_by else []
+    } for m in msgs])
+
+@app.route('/mark_seen', methods=['POST'])
+def mark_seen():
+    data = request.get_json()
+    msg = Message.query.get(data['message_id'])
+    current_seen = msg.seen_by.split(',') if msg.seen_by else []
+    if data['username'] not in current_seen:
+        current_seen.append(data['username'])
+        msg.seen_by = ",".join(current_seen)
+        db.session.commit()
+    return jsonify({"status": "seen"}), 200
+
 # Place all new routes ABOVE this line
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
