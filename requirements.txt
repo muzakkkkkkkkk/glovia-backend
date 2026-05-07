@@ -6,3 +6,8 @@ psycopg2-binary
 eventlet
 gunicorn
 cryptography
+Flask
+Flask-SQLAlchemy
+psycopg2-binary
+flask-cors
+werkzeug
