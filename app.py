@@ -1,3 +1,10 @@
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS # <--- 1. ADD THIS IMPORT
+
+app = Flask(__name__)
+CORS(app) # <--- 2. ADD THIS LINE RIGHT HERE
+
 import bcrypt
 from flask import request, jsonify
 # Add this to your imports
